@@ -13,9 +13,16 @@ public class BasicBuffer {
         }
         // 转换buffer（写 => 读）
         intBuffer.flip();
+        /**
+         * public final Buffer flip() {
+         *         limit = position;
+         *         position = 0;
+         *         mark = -1;
+         *         return this;
+         *     }
+         */
         while (intBuffer.hasRemaining()) {
             System.out.println(intBuffer.get());
         }
-
     }
 }
