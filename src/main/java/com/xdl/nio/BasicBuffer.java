@@ -11,6 +11,15 @@ public class BasicBuffer {
         for (int i = 0; i < intBuffer.capacity(); i++) {
             intBuffer.put(i * 2);
         }
+        /**
+         * intBuffer.clear();
+         * public final Buffer clear() {
+         *         position = 0;
+         *         limit = capacity;
+         *         mark = -1;
+         *         return this;
+         *     }
+         */
         // 转换buffer（写 => 读）
         intBuffer.flip();
         /**

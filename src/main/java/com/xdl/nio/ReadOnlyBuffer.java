@@ -1,7 +1,5 @@
 package com.xdl.nio;
 
-import javafx.scene.control.TableRow;
-
 import java.nio.ByteBuffer;
 
 public class ReadOnlyBuffer {
