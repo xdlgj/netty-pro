@@ -26,12 +26,13 @@ public class GroupChatClient {
         //将channel注册到selector
         socketChannel.register(selector, SelectionKey.OP_READ);
         username = socketChannel.getLocalAddress().toString().substring(1);
-        System.out.println(username + "is ok...");
+        System.out.println(username + " is ok...");
     }
 
     //向服务器发送消息
     public void sendInfo(String info) {
-        info = username + "说：" + info;
+        info = username + " ：" + info;
+
         try {
             socketChannel.write(ByteBuffer.wrap(info.getBytes()));
         } catch (IOException e) {
@@ -40,23 +41,29 @@ public class GroupChatClient {
     }
     //读取从服务器端回复的消息
     public void readInfo() {
-        try {
-            int readChannels = selector.select();
-            if (readChannels > 0) {
-                Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
-                while (iterator.hasNext()) {
-                    SelectionKey key = iterator.next();
-                    if(key.isReadable()) {
-                        SocketChannel sc = (SocketChannel) key.channel();
-                        ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
-                        sc.read(byteBuffer);
-                        String msg = new String(byteBuffer.array());
+        while (true) {
+            try {
+                int readChannels = selector.select();
+                if (readChannels > 0) {
+                    Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+                    while (iterator.hasNext()) {
+                        SelectionKey key = iterator.next();
+                        if(key.isReadable()) {
+                            SocketChannel sc = (SocketChannel) key.channel();
+                            ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+                            sc.read(byteBuffer);
+                            String msg = new String(byteBuffer.array());
+                            System.out.println(msg.trim());
+                        }
+                        // 必须移除
+                        iterator.remove();
                     }
-                }
-            }
 
-        } catch (Exception e) {
-            e.printStackTrace();
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -65,16 +72,14 @@ public class GroupChatClient {
         // 启动客户端
         GroupChatClient chatClient = new GroupChatClient();
         // 启动一个线程
-        new Thread() {
-            public void run() {
-                chatClient.readInfo();
-                try {
-                    Thread.currentThread().sleep(3000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+        new Thread(() -> {
+            chatClient.readInfo();
+            try {
+                Thread.currentThread().sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        }.start();
+        }).start();
         // 发送数据到服务器
         Scanner scanner = new Scanner(System.in);
         while (scanner.hasNextLine()) {
