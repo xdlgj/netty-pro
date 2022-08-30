@@ -33,6 +33,7 @@ public class GroupChatServer {
 
     //监听
     public void listen() {
+        System.out.println("监听线程：" + Thread.currentThread().getName());
         try {
             // 3、循环监听是否有事件发生
             while (true) {
@@ -102,6 +103,7 @@ public class GroupChatServer {
     //转发消息到其他客户端
     private void sendInfoToOtherClient(String msg, SocketChannel self) throws IOException {
         System.out.println("服务器转发消息中..." + selector.keys().size());
+        System.out.println("服务器战法数据给客户端线程：" + Thread.currentThread().getName());
         for (SelectionKey key : selector.keys()) {
             Channel targetChannel = key.channel();
             System.out.println("channel hashcode:" + targetChannel.hashCode());

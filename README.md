@@ -39,3 +39,38 @@ NIO非阻塞网络编程相关的（Selector、SelectionKey、ServerSocketChanne
 * 适合大文件传输
 * 需要2次上下文切换，最少2次数据拷贝
 * 可以利用DMA（direct memory access:直接内存拷贝不使用CPU）方式，减少CPU拷贝，mmap则不能（必须从内核拷贝到Socket缓冲区）
+# Netty
+## 线程模型
+* 目前存在的线程模型有：
+  1. 传统阻塞I/O服务模型
+  2. Reactor模型
+* 根据Reactor的数量和处理资源池线程的数量不同，有3种典型的实现
+  * 单Reactor单线程
+    * ![single](./imgs/single.png)
+    * 优点：编码简单、清晰明了
+    * 缺点：如果客户端连接数量较多，将无法支撑，前面的NIO案例就属于这种模型
+  * 单Reactor多线程
+    * ![multi](./imgs/multi.png)
+    * 优点：可以充分利用多核CPU的处理能力
+    * 缺点：多线程数据共享和访问比较复杂，reactor处理所有的事件的监听和响应，在单线程运行，在高并发场景容易出现性能瓶颈。
+  * 主从Reactor多线程
+    * ![master-slave](./imgs/master-slave.png)
+    * 优点：父线程与子线程的数据交互简单职责明确，父线程只需要接收新连接，子线程完成后续的业务处理
+    * 缺点：编程复杂度较高
+* Netty线程模型（netty主要基于主从Reactor多线程模型做了一定的改进，其中主从Reactor多线程模型有多个Reactor）
+## netty架构图
+![netty](./imgs/netty.png)
+1. Netty抽象出两组线程池BossGroup专门负责接收客户端的连接，WorkerGroup专门负责网络的读写
+2. BossGroup和WorkerGroup类型都是NioEventLoopGroup
+3. NioEventLoopGroup相当于一个事件循环组，这个组中含有多个事件循环，每个事件循环就是NioEventLoop
+4. NioEventLoop表示一个不断循环的执行处理任务的线程，每个NioEventLoop都有一个selector，用于监听绑定在其上socket的网络通信
+5. NioEventLoopGroup可以有多个线程，即可以含有多个NioEventLoop
+6. 每个Boss NioEventLoop执行的步骤有3步：
+    1. 轮询accept事件
+    2. 处理accept事件，与client建立连接，生成NioSocketChannel，并将其注册到某个Worker NioEventLoop中的selector
+    3. 处理任务队列的任务，即runAllTasks
+7. 每个Worker NioEventLoop循环执行的步骤
+    1. 轮询read、write事件
+    2. 处理I/O事件，即read、write事件，在对应的NioSocketChannel上处理
+    3. 处理任务队列的任务，即runAllTasks
+8. 每个Worker NioEventLoop处理业务时，会使用pipeline（管道），pipeline中包含了channel，即通过pipeline可以获取到对应通道，管道中维护了很多的处理器。
