@@ -17,3 +17,25 @@ NIO非阻塞网络编程相关的（Selector、SelectionKey、ServerSocketChanne
 5. 进一步得到各个SelectionKey（有事件发生）
 6. 再通过SelectionKey的channel方法反向获取SocketChannel
 7. 可以通过得到的channel完成业务处理
+# NIO与零拷贝
+传统IO经过4次拷贝，3次状态切换：磁盘 -> 内核 -> 用户 -> 内核 -> 协议栈；内核态 -> 用户态 -> 内核态
+![传统IO拷贝](./imgs/iocopy.png)
+* 我们说的零拷贝，是从操作系统的角度来说的。因为内核缓冲区之间没有数据是重复的（只有kernel buffer有一份数据），内核缓冲区之间的数据拷贝是通过CPU拷贝的
+* 零拷贝不仅仅带来更少的数据复制，还能带来其他的性能优势，例如更少的上下文切换，更少的CPU缓存微共享以及无CPU校验和计算。
+## mmap（内存映射）
+![mmap](./imgs/mmap.png)
+* mmap通过内存映射，将文件映射到内核缓冲区，同时，用户可以共享内核空间的数据。这样，在进行网络传输时，就可以减少内核空间到用户空间的拷贝次数。
+* 适合小数据量读写
+* 需要3次上下文切换，3次数据拷贝
+
+## sendFile
+* linux2.1版本提供了sendFile函数，其基本原理如下：
+  * 数据根本不用经过用户态，直接从内核缓冲区进入到SocketBuffer，同时，由于和用户态完全无关，就减少了一次上下文切换
+    ![sendFile1](./imgs/sendFile1.png)
+    
+* linux2.4版本中，做了一些优化，避免了从内核缓冲区拷贝到Socket buffer操作，直接拷贝到协议栈，从而再一次减少了数据拷贝
+  * 这里其实还是有一次CPU拷贝kernel buffer -> socket buffer 但是拷贝的信息很少，比如length、offset消耗低，可以忽略
+    * ![sendFile2](./imgs/sendFile2.png)
+* 适合大文件传输
+* 需要2次上下文切换，最少2次数据拷贝
+* 可以利用DMA（direct memory access:直接内存拷贝不使用CPU）方式，减少CPU拷贝，mmap则不能（必须从内核拷贝到Socket缓冲区）
