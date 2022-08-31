@@ -33,6 +33,8 @@ public class NettyServer {
                         // 给pipeline设置处理器
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
+                            // 可以将每个用户的socketChannel存放到集合中，服务器可以根据hashCode找到对应的channel进行发送数据
+                            System.out.println("客户端socketChannel hashcode = " + socketChannel.hashCode());
                             socketChannel.pipeline().addLast(new NettyServerHandler());
                         }
                     }); // 给workerGroup的EventLoop对应的管道设置处理器
