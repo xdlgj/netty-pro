@@ -1,4 +1,4 @@
-package com.xdl.heartbeat;
+package com.xdl.netty.heartbeat;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
